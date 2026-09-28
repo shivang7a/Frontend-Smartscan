@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartScan - Receiver Search Strategy Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a5490;
+            --secondary: #2c7ac4;
+            --accent: #e67e22;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--white);
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            background: var(--success);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge.scanning {
+            background: var(--warning);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .card-header h2 {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .control-panel {
+            display: grid;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--light);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            min-width: 80px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 2px solid var(--light);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #a93226;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #229954;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--light) 0%, #d5dbdb 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric-unit {
+            font-size: 14px;
+            color: #95a5a6;
+            margin-left: 5px;
+        }
+
+        .spectrum-display {
+            height: 300px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .frequency-bars {
+            display: flex;
+            height: 100%;
+            align-items: flex-end;
+            padding: 20px;
+            gap: 3px;
+        }
+
+        .freq-bar {
+            flex: 1;
+            background: linear-gradient(to top, #00d4ff, #0099ff);
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s ease;
+            opacity: 0.8;
+        }
+
+        .threat-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .threat-item {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .threat-item.high {
+            border-left-color: var(--danger);
+        }
+
+        .threat-item.medium {
+            border-left-color: var(--warning);
+        }
+
+        .threat-item.low {
+            border-left-color: var(--success);
+        }
+
+        .threat-info {
+            flex: 1;
+        }
+
+        .threat-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .threat-details {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .threat-priority {
+            background: var(--warning);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .threat-priority.high {
+            background: var(--danger);
+        }
+
+        .threat-priority.low {
+            background: var(--success);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .log-console {
+            background: #1a1a2e;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            animation: fadeIn 0.3s forwards;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .timestamp {
+            color: #888;
+        }
+
+        .log-info {
+            color: #0f0;
+        }
+
+        .log-warning {
+            color: #f39c12;
+        }
+
+        .log-error {
+            color: #e74c3c;
+        }
+
+        .log-success {
+            color: #2ecc71;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group .btn {
+            flex: 1;
+        }
+
+        .process-monitor {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .process-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .process-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .process-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--success);
+            color: white;
+        }
+
+        .process-status.idle {
+            background: #95a5a6;
+        }
+
+        .help-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: var(--secondary);
+            margin-left: 5px;
+        }
+
+        .help-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #34495e;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .help-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 12px;
+            border: 2px solid var(--light);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            border-color: var(--secondary);
+            background: var(--light);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="logo">
+                <h1>⚡ SmartScan RSS Engine</h1>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span id="statusIndicator">●</span>
+                <span id="statusText">System Ready</span>
+            </div>
+        </header>
+
+        <!-- STATISTICS ROW -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-icon">📡</div>
+                <div class="stat-value" id="poiValue">0.0</div>
+                <div class="stat-label">POI (%)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value" id="ttiValue">0.0</div>
+                <div class="stat-label">TTI (sec)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-value" id="threatsValue">0</div>
+                <div class="stat-label">Threats Detected</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="coverageValue">0</div>
+                <div class="stat-label">Band Coverage (%)</div>
+            </div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="main-grid">
+            <!-- LEFT COLUMN: CONTROL PANEL -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Control Panel</h2>
+                    <span class="help-tooltip">ℹ️
+                        <span class="tooltiptext">Configure your receiver parameters. Adjust IBW (how much spectrum you see at once), dwell time (how long to look at each band), and revisit period (how often to check each band).</span>
+                    </span>
+                </div>
+                <div class="control-panel">
+                    <!-- IBW CONTROL -->
+                    <div class="control-group">
+                        <label>Instantaneous Bandwidth (IBW)
+                            <span class="help-tooltip">?
+                                <span class="tooltiptext">The width of spectrum the receiver can see at one time. Higher = faster coverage but lower sensitivity.</span>
+                            </span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="range" id="ibwRange" min="500" max="3000" value="2000" step="100">
+                            <span class="value-display"><span id="ibwValue">2000</span> MHz</span>
+                        </div>
+                    </div>
+
+                    <!-- DWELL TIME CONTROL -->
+                    <div class="control-group">
+                        <label>Dwell Time
+                            <span class="help-tooltip">?
+                                <span class="tooltiptext">How long the receiver stays on each frequency band. Longer = better detection but slower scanning.</span>
+                            </span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="range" id="dwellRange" min="10" max="500" value="100" step="10">
+                            <span class="value-display"><span id="dwellValue">100</span> ms</span>
+                        </div>
+                    </div>
+
+                    <!-- REVISIT PERIOD CONTROL -->
+                    <div class="control-group">
+                        <label>Revisit Period
+                            <span class="help-tooltip">?
+                                <span class="tooltiptext">How often to check each frequency band. Shorter = fresher data but higher processing load.</span>
+                            </span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="range" id="revisitRange" min="1" max="30" value="5" step="1">
+                            <span class="value-display"><span id="revisitValue">5</span> sec</span>
+                        </div>
+                    </div>
+
+                    <!-- PRIORITY MODE -->
+                    <div class="control-group">
+                        <label>Priority Mode
+                            <span class="help-tooltip">?
+                                <span class="tooltiptext">How the system decides which frequencies to scan next. Adaptive learns from threats, MDD uses pre-loaded library.</span>
+                            </span>
+                        </label>
+                        <select id="priorityMode">
+                            <option value="adaptive">Adaptive Bandit/RL</option>
+                            <option value="mdd">MDD-Weighted Priority</option>
+                            <option value="round-robin">Round Robin Baseline</option>
+                            <option value="threat-based">Threat-Based</option>
+                        </select>
+                    </div>
+
+                    <!-- STRATEGY TYPE -->
+                    <div class="control-group">
+                        <label>Strategy Type</label>
+                        <select id="strategyType">
+                            <option value="smartscan">SmartScan (Adaptive)</option>
+                            <option value="periodic">Periodic Sweep</option>
+                            <option value="random">Randomized</option>
+                        </select>
+                    </div>
+
+                    <!-- METRICS -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Sensitivity</div>
+                            <div class="metric-value">-110<span class="metric-unit">dBm</span></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Scan Rate</div>
+                            <div class="metric-value" id="scanRate">0<span class="metric-unit">GHz/s</span></div>
+                        </div>
+                    </div>
+
+                    <!-- MAIN BUTTONS -->
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="startBtn" onclick="startScan()">▶ Start Scan</button>
+                        <button class="btn btn-danger" id="stopBtn" onclick="stopScan()" disabled>⏹ Stop</button>
+                    </div>
+
+                    <!-- ACTION BUTTONS -->
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="exportConfig()">
+                            💾 Export Config
+                        </button>
+                        <button class="action-btn" onclick="loadMDD()">
+                            📚 Load MDD Library
+                        </button>
+                        <button class="action-btn" onclick="clearThreats()">
+                            🗑️ Clear Threats
+                        </button>
+                        <button class="action-btn" onclick="resetSystem()">
+                            🔄 Reset System
+                        </button>
+                    </div>
+
+                    <!-- PROCESS MONITOR -->
+                    <div class="process-monitor">
+                        <h3 style="margin-bottom: 10px; font-size: 14px; color: var(--dark);">Running Processes</h3>
+                        <div id="processList">
+                            <div class="process-item">
+                                <span class="process-name">Digital Twin Simulator</span>
+                                <span class="process-status idle">IDLE</span>
+                            </div>
+                            <div class="process-item">
+                                <span class="process-name">De-interleaver</span>
+                                <span class="process-status idle">IDLE</span>
+                            </div>
+                            <div class="process-item">
+                                <span class="process-name">Strategy Engine</span>
+                                <span class="process-status idle">IDLE</span>
+                            </div>
+                            <div class="process-item">
+                                <span class="process-name">PDW Extractor</span>
+                                <span class="process-status idle">IDLE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: VISUALIZATIONS -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- SPECTRUM ANALYSIS -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Spectrum Analysis</h2>
+                        <span style="font-size: 14px; color: #7f8c8d;">0.5 - 18 GHz</span>
+                    </div>
+                    <div class="spectrum-display">
+                        <div class="frequency-bars" id="spectrumBars"></div>
+                    </div>
+                </div>
+
+                <!-- THREAT DETECTION -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Threat Detection</h2>
+                        <span style="font-size: 14px; color: #7f8c8d;">Real-time emitter tracking</span>
+                    </div>
+                    <div class="threat-list" id="threatList">
+                        <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                            No threats detected. Start scanning to begin detection.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SYSTEM LOG -->
+        <div class="card">
+            <div class="card-header">
+                <h2>System Log</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="clearLog()" style="padding: 6px 12px; font-size: 12px;">Clear Log</button>
+                </div>
+            </div>
+            <div class="log-console" id="logConsole"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // GLOBAL STATE
+        // ========================
+        let isScanning = false;
+        let scanInterval = null;
+        let threatCount = 0;
+        let detectedThreats = [];
+        let scanStartTime = null;
+        let activityLog = [];
+
+        // ========================
+        // INITIALIZATION
+        // ========================
+        window.onload = function() {
+            initializeSpectrum();
+            addLog('SmartScan RSS Engine v1.0 initialized', 'success');
+            addLog('Hardware: B210 USRP + Xilinx Zynq UltraScale+ RFSoC', 'info');
+            addLog('Framework: Python 3.11 + C++17 + VHDL/Verilog', 'info');
+            addLog('System ready. Configure parameters and click START SCAN', 'info');
+            updateMetrics();
+        };
+
+        // ========================
+        // SPECTRUM VISUALIZATION
+        // ========================
+        function initializeSpectrum() {
+            const spectrumBars = document.getElementById('spectrumBars');
+            spectrumBars.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'freq-bar';
+                bar.style.height = '20%';
+                spectrumBars.appendChild(bar);
+            }
+        }
+
+        function updateSpectrum() {
+            const bars = document.querySelectorAll('.freq-bar');
+            bars.forEach((bar, index) => {
+                // Simulate realistic spectrum activity
+                let baseHeight = 20 + Math.random() * 30;
+                
+                // Add peaks for detected threats
+                if (isScanning && Math.random() > 0.85) {
+                    baseHeight = 60 + Math.random() * 40;
+                }
+                
+                bar.style.height = baseHeight + '%';
+            });
+        }
+
+        // ========================
+        // CONTROL FUNCTIONS
+        // ========================
+        
+        // Range slider event listeners
+        document.getElementById('ibwRange').addEventListener('input', function() {
+            document.getElementById('ibwValue').textContent = this.value;
+            updateMetrics();
+            addLog(`IBW adjusted to ${this.value} MHz`, 'info');
+        });
+
+        document.getElementById('dwellRange').addEventListener('input', function() {
+            document.getElementById('dwellValue').textContent = this.value;
+            updateMetrics();
+            addLog(`Dwell time set to ${this.value} ms`, 'info');
+        });
+
+        document.getElementById('revisitRange').addEventListener('input', function() {
+            document.getElementById('revisitValue').textContent = this.value;
+            updateMetrics();
+            addLog(`Revisit period changed to ${this.value} seconds`, 'info');
+        });
+
+        document.getElementById('priorityMode').addEventListener('change', function() {
+            addLog(`Priority mode switched to: ${this.options[this.selectedIndex].text}`, 'info');
+            if (isScanning) {
+                addLog('Re-planning scan schedule with new priority mode...', 'warning');
+                updateProcessStatus('Strategy Engine', 'RUNNING');
+            }
+        });
+
+        document.getElementById('strategyType').addEventListener('change', function() {
+            addLog(`Strategy type changed to: ${this.options[this.selectedIndex].text}`, 'info');
+        });
+
+        // ========================
+        // START SCAN
+        // ========================
+        function startScan() {
+            if (isScanning) return;
+            
+            isScanning = true;
+            scanStartTime = new Date();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            
+            // Update status
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.classList.add('scanning');
+            document.getElementById('statusText').textContent = 'Scanning Active';
+            
+            // Log sequence
+            addLog('═══════════════════════════════════════', 'info');
+            addLog('SCAN SEQUENCE INITIATED', 'success');
+            addLog('═══════════════════════════════════════', 'info');
+            
+            setTimeout(() => {
+                addLog('→ Loading MDD emitter library...', 'info');
+                updateProcessStatus('Digital Twin Simulator', 'RUNNING');
+            }, 500);
+            
+            setTimeout(() => {
+                addLog('✓ MDD library loaded: 247 emitter profiles', 'success');
+                addLog('→ Initializing super-heterodyne receiver...', 'info');
+            }, 1000);
+            
+            setTimeout(() => {
+                addLog('✓ Receiver tuned to adaptive schedule', 'success');
+                addLog('→ Starting Digital Twin Simulator...', 'info');
+                updateProcessStatus('Strategy Engine', 'RUNNING');
+            }, 1500);
+            
+            setTimeout(() => {
+                addLog('✓ Simulator running with randomized emitters', 'success');
+                addLog('→ Beginning frequency sweep across 0.5-18 GHz...', 'info');
+                updateProcessStatus('PDW Extractor', 'RUNNING');
+            }, 2000);
+            
+            setTimeout(() => {
+                addLog('✓ PDW extraction active', 'success');
+                addLog('→ De-interleaver initialized', 'info');
+                updateProcessStatus('De-interleaver', 'RUNNING');
+            }, 2500);
+            
+            setTimeout(() => {
+                addLog('✓ All systems operational', 'success');
+                addLog('Scanning for threats...', 'warning');
+            }, 3000);
+            
+            // Start scan simulation
+            scanInterval = setInterval(() => {
+                updateSpectrum();
+                simulateThreatDetection();
+                updateScanMetrics();
+            }, 1000);
+        }
+
+        // ========================
+        // STOP SCAN
+        // ========================
+        function stopScan() {
+            if (!isScanning) return;
+            
+            isScanning = false;
+            clearInterval(scanInterval);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            // Update status
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.classList.remove('scanning');
+            document.getElementById('statusText').textContent = 'System Ready';
+            
+            // Stop all processes
+            updateProcessStatus('Digital Twin Simulator', 'IDLE');
+            updateProcessStatus('De-interleaver', 'IDLE');
+            updateProcessStatus('Strategy Engine', 'IDLE');
+            updateProcessStatus('PDW Extractor', 'IDLE');
+            
+            addLog('═══════════════════════════════════════', 'warning');
+            addLog('SCAN STOPPED BY OPERATOR', 'warning');
+            addLog('═══════════════════════════════════════', 'warning');
+            addLog(`Total threats detected: ${threatCount}`, 'info');
+            addLog(`Scan duration: ${Math.floor((new Date() - scanStartTime) / 1000)} seconds`, 'info');
+        }
+
+        // ========================
+        // THREAT DETECTION SIMULATION
+        // ========================
+        const emitterTypes = [
+            { type: 'Frequency-Agile Radar', freqMin: 8.2, freqMax: 12.4, priority: 'high', pattern: 'hopping' },
+            { type: 'AESA Emitter', freqMin: 3.5, freqMax: 4.2, priority: 'high', pattern: 'continuous' },
+            { type: 'Rotating Radar', freqMin: 5.4, freqMax: 5.9, priority: 'medium', pattern: 'periodic' },
+            { type: 'SAM System', freqMin: 14.0, freqMax: 14.5, priority: 'high', pattern: 'burst' },
+            { type: 'Fire Control Radar', freqMin: 9.8, freqMax: 10.2, priority: 'medium', pattern: 'tracking' },
+            { type: 'Search Radar', freqMin: 2.9, freqMax: 3.1, priority: 'low', pattern: 'sweeping' },
+            { type: 'Navigation Radar', freqMin: 5.2, freqMax: 5.7, priority: 'low', pattern: 'continuous' },
+            { type: 'Missile Seeker', freqMin: 15.5, freqMax: 17.2, priority: 'high', pattern: 'tracking' }
+        ];
+
+        function simulateThreatDetection() {
+            // Random threat detection (15% chance per second)
+            if (Math.random() > 0.85) {
+                const emitter = emitterTypes[Math.floor(Math.random() * emitterTypes.length)];
+                const freq = (emitter.freqMin + Math.random() * (emitter.freqMax - emitter.freqMin)).toFixed(2);
+                const pdwRate = Math.floor(200 + Math.random() * 800);
+                const pw = (Math.random() * 10).toFixed(1);
+                const pri = (Math.random() * 1000).toFixed(0);
+                
+                const threat = {
+                    id: Date.now(),
+                    type: emitter.type,
+                    freq: freq,
+                    priority: emitter.priority,
+                    pdwRate: pdwRate,
+                    pw: pw,
+                    pri: pri,
+                    pattern: emitter.pattern,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                
+                detectedThreats.unshift(threat);
+                threatCount++;
+                
+                addThreatToList(threat);
+                document.getElementById('threatsValue').textContent = threatCount;
+                
+                // Log with appropriate color
+                const logType = emitter.priority === 'high' ? 'error' : emitter.priority === 'medium' ? 'warning' : 'info';
+                addLog(`⚠ THREAT DETECTED: ${emitter.type} at ${freq} GHz [${emitter.priority.toUpperCase()}]`, logType);
+                addLog(`  ↳ PDW: ${pdwRate} pulses/sec, PW: ${pw}µs, PRI: ${pri}µs, Pattern: ${emitter.pattern}`, 'info');
+                
+                // Trigger de-interleaving
+                if (emitter.priority === 'high') {
+                    setTimeout(() => {
+                        addLog(`  ↳ De-interleaving PDW stream for ${emitter.type}...`, 'info');
+                    }, 500);
+                    setTimeout(() => {
+                        addLog(`  ↳ Emitter classified and tracked`, 'success');
+                    }, 1500);
+                }
+            }
+        }
+
+        function addThreatToList(threat) {
+            const threatList = document.getElementById('threatList');
+            
+            // Clear "no threats" message
+            if (threatList.querySelector('div[style*="text-align: center"]')) {
+                threatList.innerHTML = '';
+            }
+            
+            const item = document.createElement('div');
+            item.className = `threat-item ${threat.priority}`;
+            item.innerHTML = `
+                <div class="threat-info">
+                    <div class="threat-title">${threat.type}</div>
+                    <div class="threat-details">
+                        Freq: ${threat.freq} GHz | PDW: ${threat.pdwRate} p/s | PW: ${threat.pw}µs | PRI: ${threat.pri}µs | ${threat.pattern}
+                    </div>
+                    <div class="threat-details" style="margin-top: 3px; font-size: 11px;">
+                        Detected at: ${threat.timestamp}
+                    </div>
+                </div>
+                <div class="threat-priority ${threat.priority}">${threat.priority.toUpperCase()}</div>
+            `;
+            
+            threatList.insertBefore(item, threatList.firstChild);
+            
+            // Keep only last 10 threats visible
+            while (threatList.children.length > 10) {
+                threatList.removeChild(threatList.lastChild);
+            }
+        }
+
+        // ========================
+        // METRICS UPDATE
+        // ========================
+        function updateMetrics() {
+            const ibw = parseFloat(document.getElementById('ibwRange').value);
+            const dwell = parseFloat(document.getElementById('dwellRange').value);
+            const revisit = parseFloat(document.getElementById('revisitRange').value);
+            
+            // Calculate POI (Probability of Intercept)
+            // Higher IBW = better coverage, lower dwell = faster scan, lower revisit = fresher data
+            const totalBand = 17500; // MHz (0.5 to 18 GHz)
+            const spectralPOI = (ibw / totalBand) * 100;
+            const N = Math.floor(revisit * 1000 / dwell); // Number of looks
+            const cumulativePOI = (1 - Math.pow(1 - spectralPOI/100, N)) * 100;
+            
+            document.getElementById('poiValue').textContent = cumulativePOI.toFixed(1);
+            
+            // Calculate TTI (Time To Intercept)
+            const tti = (revisit * dwell / 1000).toFixed(1);
+            document.getElementById('ttiValue').textContent = tti;
+            
+            // Calculate scan rate
+            const scanRate = (ibw / (dwell / 1000) / 1000).toFixed(1); // GHz/s
+            document.getElementById('scanRate').textContent = scanRate;
+            
+            // Calculate coverage
+            const coverage = Math.min(100, (N * spectralPOI)).toFixed(0);
+            document.getElementById('coverageValue').textContent = coverage;
+        }
+
+        function updateScanMetrics() {
+            // Simulate real-time metric updates during scan
+            const currentPOI = parseFloat(document.getElementById('poiValue').textContent);
+            const variance = (Math.random() - 0.5) * 2;
+            const newPOI = Math.max(0, Math.min(100, currentPOI + variance));
+            document.getElementById('poiValue').textContent = newPOI.toFixed(1);
+        }
+
+        // ========================
+        // LOGGING SYSTEM
+        // ========================
+        function addLog(message, type = 'info') {
+            const logConsole = document.getElementById('logConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight;
+            
+            // Keep log history
+            activityLog.push({ timestamp, message, type });
+        }
+
+        function clearLog() {
+            document.getElementById('logConsole').innerHTML = '';
+            addLog('Log cleared', 'info');
+        }
+
+        // ========================
+        // PROCESS MANAGEMENT
+        // ========================
+        function updateProcessStatus(processName, status) {
+            const processes = document.querySelectorAll('.process-item');
+            processes.forEach(process => {
+                const name = process.querySelector('.process-name').textContent;
+                if (name === processName) {
+                    const statusElement = process.querySelector('.process-status');
+                    statusElement.textContent = status;
+                    statusElement.className = 'process-status';
+                    if (status !== 'IDLE') {
+                        statusElement.classList.remove('idle');
+                    } else {
+                        statusElement.classList.add('idle');
+                    }
+                }
+            });
+        }
+
+        // ========================
+        // UTILITY FUNCTIONS
+        // ========================
+        function exportConfig() {
+            const config = {
+                ibw: document.getElementById('ibwRange').value,
+                dwellTime: document.getElementById('dwellRange').value,
+                revisitPeriod: document.getElementById('revisitRange').value,
+                priorityMode: document.getElementById('priorityMode').value,
+                strategyType: document.getElementById('strategyType').value,
+                exportTime: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'smartscan_config.json';
+            link.click();
+            
+            addLog('Configuration exported successfully', 'success');
+        }
+
+        function loadMDD() {
+            addLog('Loading Mission-Dependent Data library...', 'info');
+            setTimeout(() => {
+                addLog('✓ MDD library loaded: 247 emitter profiles', 'success');
+                addLog('  ↳ Includes: RF band, PRI, pulse width, scan patterns', 'info');
+            }, 1000);
+        }
+
+        function clearThreats() {
+            detectedThreats = [];
+            threatCount = 0;
+            document.getElementById('threatsValue').textContent = '0';
+            document.getElementById('threatList').innerHTML = `
+                <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                    No threats detected. Start scanning to begin detection.
+                </div>
+            `;
+            addLog('Threat list cleared', 'warning');
+        }
+
+        function resetSystem() {
+            if (isScanning) {
+                stopScan();
+            }
+            
+            // Reset all controls
+            document.getElementById('ibwRange').value = 2000;
+            document.getElementById('ibwValue').textContent = '2000';
+            document.getElementById('dwellRange').value = 100;
+            document.getElementById('dwellValue').textContent = '100';
+            document.getElementById('revisitRange').value F= 5;
+            document.getElementById('revisitValue').textContent = '5';
+            document.getElementById('priorityMode').selectedIndex = 0;
+            document.getElementById('strategyType').selectedIndex = 0;
+            
+            clearThreats();
+            updateMetrics();
+            initializeSpectrum();
+            
+            addLog('═══════════════════════════════════════', 'warning');
+            addLog('SYSTEM RESET COMPLETE', 'success');
+            addLog('═══════════════════════════════════════', 'warning');
+        }
+    </script>
+</body>
+</html>
